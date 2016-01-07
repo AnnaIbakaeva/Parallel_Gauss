@@ -21,7 +21,7 @@ int** fillInMatrix(int** a, int n, int m)
 	{
 		for (int j = 0; j < m; j++)
 		{
-			a[i][j] = i;// rand() % 100;
+			a[i][j] = j+2+i;// rand() % 100;
 		}
 	}
 	return a;
@@ -29,13 +29,39 @@ int** fillInMatrix(int** a, int n, int m)
 
 void forwardSubstitution(int** a, int n, int m)
 {
-	for (int i = 0; i < n; i++)
-	{
-		for (int j = 0; j < m; j++)
-		{
+	int ** b = initMatrix(n, m);
 
+	for (int j = 0; j < m; j++)
+		b[0][j] = a[0][j];
+
+	for (int k = 1; k < n; k++)
+	{
+		for (int i = k; i < n; i++)
+		{
+			for (int j = 0; j < m; j++)
+			{
+				b[i][j] = a[i][j] - a[k-1][j] * (a[i][k-1] / a[k-1][k-1]);
+			}
 		}
-	}
+
+		cout << "\nb:\n";
+		for (int i = 0; i < n; i++)
+		{
+			for (int j = 0; j < m; j++)
+			{
+				cout << b[i][j] << " ";
+			}
+			cout << "\n";
+		}
+
+		for (int l = 0; l < n; l++)
+		{
+			for (int t = 0; t < m; t++)
+			{
+				a[l][t] = b[l][t];
+			}
+		}
+	}	
 }
 
 int main(int argc, char* argv[])
@@ -44,13 +70,24 @@ int main(int argc, char* argv[])
 	double t1, t2;
 	int rowAmount, columnAmount;
 
-	cout << "Enter row amount:";
+	cout << "Enter row amount:\n";
 	cin >> rowAmount;
-	cout << "\n\nEnter column amount:";
+	cout << "\nEnter column amount:\n";
 	cin >> columnAmount;
 
 	int **a = initMatrix(rowAmount, columnAmount);
 	a = fillInMatrix(a, rowAmount, columnAmount);
 
+	cout << "a:\n";
+	for (int i = 0; i < rowAmount; i++)
+	{
+		for (int j = 0; j < columnAmount; j++)
+		{
+			cout << a[i][j] << " ";
+		}
+		cout << "\n";
+	}
 
+	forwardSubstitution(a, rowAmount, columnAmount);
+	cin >> rank;
 }
