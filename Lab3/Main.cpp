@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <cstdlib>
 
 using namespace std;
 
@@ -17,11 +18,12 @@ int** initMatrix(int n, int m)
 
 int** fillInMatrix(int** a, int n, int m)
 {
+	srand(time(NULL));
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < m; j++)
 		{
-			a[i][j] = j+2+i;// rand() % 100;
+			a[i][j] = rand() % 10;
 		}
 	}
 	return a;
@@ -40,7 +42,7 @@ void forwardSubstitution(int** a, int n, int m)
 		{
 			for (int j = 0; j < m; j++)
 			{
-				b[i][j] = a[i][j] - a[k-1][j] * (a[i][k-1] / a[k-1][k-1]);
+				b[i][j] = a[i][j] - ((a[k-1][j] * a[i][k-1]) / a[k-1][k-1]);
 			}
 		}
 
