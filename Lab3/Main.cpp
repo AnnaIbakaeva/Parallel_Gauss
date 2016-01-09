@@ -42,11 +42,12 @@ void forwardSubstitution(int** a, int n, int m)
 		{
 			for (int j = 0; j < m; j++)
 			{
-				b[i][j] = a[i][j] - ((a[k-1][j] * a[i][k-1]) / a[k-1][k-1]);
+				
+				
 			}
 		}
 
-		cout << "\nb:\n";
+		/*cout << "\nb:\n";
 		for (int i = 0; i < n; i++)
 		{
 			for (int j = 0; j < m; j++)
@@ -54,7 +55,7 @@ void forwardSubstitution(int** a, int n, int m)
 				cout << b[i][j] << " ";
 			}
 			cout << "\n";
-		}
+		}*/
 
 		for (int l = 0; l < n; l++)
 		{
