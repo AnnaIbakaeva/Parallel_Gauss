@@ -22,7 +22,7 @@ float** fillInMatrix(float** a, int n, int m)
 	{
 		for (int j = 0; j < m; j++)
 		{
-			a[i][j] = rand() % 10;
+			a[i][j] = rand() % 10 + 1;
 		}
 	}
 	return a;
@@ -42,7 +42,7 @@ float** forwardSubstitution(float** a, int n, int m)
 			for (int j = 0; j < m; j++)
 			{
 				b[i][j] = a[i][j] - ((a[k - 1][j] * a[i][k - 1]) / a[k - 1][k - 1]);
-				if (b[i][j] < 0.0001)
+				if (fabs(b[i][j]) < 0.00001)
 					b[i][j] = 0;
 			}
 		}
@@ -74,7 +74,7 @@ float * backSubstitution(float** a, int n, int m)
 	float * result = new float[m - 1];
 	//Обратный ход метода Гаусса
 	result[m - 2] = a[n - 1][m - 1] / a[n - 1][m - 2];
-	for (int i = m - 2; i >= 0; i--)
+	for (int i = m - 3; i >= 0; i--)
 	{
 		int buf = 0;
 		for (int j = i + 1; j < m - 1; j++)
