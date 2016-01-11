@@ -8,14 +8,6 @@
 
 using namespace std;
 
-float** initMatrix(int n, int m)
-{
-	float **a = new float*[n];
-	for (int i = 0; i < n; i++)
-		a[i] = new float[m];
-	return a;
-}
-
 float** fillInMatrix(float** a, int n, int m)
 {
 	srand(time(NULL));
@@ -23,48 +15,47 @@ float** fillInMatrix(float** a, int n, int m)
 	{
 		for (int j = 0; j < m; j++)
 		{
-			a[i][j] = rand() % 10;
+			a[i][j] = 1;// rand() % 10 + 1;
 		}
+		a[i][i] = 2;
+		a[i][m - 1] = m;
 	}
 	return a;
 }
 
-void forwardSubstitution(float** a, int n, int m)
+float** initMatrix(int n, int m)
 {
-	float ** b = initMatrix(n, m);
+	float **a = new float*[n];
+	for (int i = 0; i < n; i++)
+		a[i] = new float[m];
+	a = fillInMatrix(a, n, m);
 
-	for (int j = 0; j < m; j++)
-		b[0][j] = a[0][j];
-
-	for (int k = 1; k < n; k++)
+	cout << "a:\n";
+	for (int i = 0; i < n; i++)
 	{
-		for (int i = k; i < n; i++)
+		for (int j = 0; j < m; j++)
 		{
-			for (int j = 0; j < m; j++)
-			{
-
-
-			}
+			cout << a[i][j] << " ";
 		}
-
-		/*cout << "\nb:\n";
-		for (int i = 0; i < n; i++)
-		{
-			for (int j = 0; j < m; j++)
-			{
-				cout << b[i][j] << " ";
-			}
-			cout << "\n";
-		}*/
-
-		for (int l = 0; l < n; l++)
-		{
-			for (int t = 0; t < m; t++)
-			{
-				a[l][t] = b[l][t];
-			}
-		}
+		cout << "\n";
 	}
+
+	return a;
+}
+
+float * backSubstitution(float** a, int n, int m)
+{
+	float * result = new float[m - 1];
+	//Обратный ход метода Гаусса
+	result[m - 2] = a[n - 1][m - 1] / a[n - 1][m - 2];
+	for (int i = m - 3; i >= 0; i--)
+	{
+		int buf = 0;
+		for (int j = i + 1; j < m - 1; j++)
+			buf += a[i][j] * result[j];
+		result[i] = (a[i][n] - buf) / a[i][i];
+	}
+	return result;
 }
 
 int main(int argc, char* argv[])
@@ -97,17 +88,6 @@ int main(int argc, char* argv[])
 	if (rank == 0)
 	{
 		float **a = initMatrix(rowAmount, columnAmount);
-		a = fillInMatrix(a, rowAmount, columnAmount);
-
-		cout << "a:\n";
-		for (int i = 0; i < rowAmount; i++)
-		{
-			for (int j = 0; j < columnAmount; j++)
-			{
-				cout << a[i][j] << " ";
-			}
-			cout << "\n";
-		}
 
 		t1 = MPI_Wtime();
 
@@ -122,13 +102,6 @@ int main(int argc, char* argv[])
 					sendingRow[j + i*columnAmount] = a[i + m*rankRowAmount][j];
 				}
 			}
-			cout << "\nSending rows\n";
-			for (int i = 0; i < rankRowAmount; i++)
-			{
-				for (int j = 0; j < columnAmount; j++)
-					cout << sendingRow[j + i*columnAmount] << " ";
-				cout << "\n";
-			}
 			MPI_Send(sendingRow, columnAmount * rankRowAmount, MPI_FLOAT, m, 0, MPI_COMM_WORLD);
 		}
 
@@ -136,13 +109,10 @@ int main(int argc, char* argv[])
 		{
 			//определяем активную строку
 			float* activeRow = new float[columnAmount];
-			cout << "\nActive row:\n";
 			for (int j = 0; j < columnAmount; j++)
 			{
 				activeRow[j] = a[r][j];
-				cout << activeRow[j] << " ";
 			}
-			cout << "\n";
 			//отправляем активную строку остальным потокам
 			for (int m = 1; m < size; m++)
 			{
@@ -161,18 +131,15 @@ int main(int argc, char* argv[])
 				for (int j = 0; j < columnAmount; j++)
 				{
 					b[k][j] = a[k][j] - ((a[r][j] * a[k][r]) / a[r][r]);
-					cout << b[k][j] << " ";
 					if (fabs(b[k][j]) < 0.00001)
 						b[k][j] = 0;
 				}
-				cout << "\n";
 			}
 			for (int i = r + 1; i < rankRowAmount; i++)
 			{
 				for (int j = 0; j < columnAmount; j++)
 					a[i][j] = b[i][j];
 			}
-
 		}
 
 		//принимаем строки от остальных потоков
@@ -191,13 +158,6 @@ int main(int argc, char* argv[])
 				}
 			}
 		}
-
-		/*for (int i = 0; i < rankRowAmount; i++)
-		{
-			for (int j = 0; j < columnAmount; j++)
-				a[i][j] = rankRow[j + i*rankRowAmount];
-		}*/
-
 		t2 = MPI_Wtime();
 		if (rowAmount <= 20 && columnAmount <= 20)
 		{
@@ -210,6 +170,12 @@ int main(int argc, char* argv[])
 			}
 		}
 		cout << "\nTime: " << (t2 - t1);
+
+		cout << "\nResult vector: ";
+		float * res = backSubstitution(a, rowAmount, columnAmount);
+		for (int i = 0; i < columnAmount-1; i++)
+			cout << res[i] << " ";
+		cout << "\n";
 	}
 	else
 	{
@@ -220,45 +186,44 @@ int main(int argc, char* argv[])
 		//пока не дошли до своей активной строки
 		int h = 0;
 		cout << "\nHead position: " << headPosition << "\n";
+		int counter = 0;
+		int source = 0;
 		while (h < headPosition)
 		{
 			//принимаем активную строку
 			MPI_Status status;
 			float* activeRow = new float[columnAmount];
-			int source = (h + 1) - rankRowAmount;
-			if (source < 0)
-				source = 0;
-			cout << "\nSource: " << source << "\n";
+			if (counter >= rankRowAmount)
+			{
+				source++;
+				counter = 0;
+			}
 			MPI_Recv(activeRow, columnAmount, MPI_FLOAT, source, rank, MPI_COMM_WORLD, &status);
-
-			/*cout << "\nResv active row:\n";
-			for (int i = 0; i < columnAmount; i++)
-				cout << activeRow[i] << " ";
-			cout << "\n";*/
 
 			float *tempRow = new float[columnAmount*rankRowAmount];
 			for (int i = 0; i < columnAmount*rankRowAmount; i++)
 				tempRow[i] = rankRow[i];
 			//считаем свои строки для этой активной строки
+			cout << "\nrank " << rank << " row:\n";
 			for (int i = 0; i < rankRowAmount; i++)
 			{
 				for (int j = h; j < columnAmount; j++)
 				{
 					int c = j + (i * columnAmount);
-					tempRow[c] = rankRow[c] - ((activeRow[j] * rankRow[i * columnAmount + h]) / activeRow[h]);					
+					tempRow[c] = rankRow[c] - ((activeRow[j] * rankRow[i * columnAmount + h]) / activeRow[h]);
 					if (fabs(tempRow[c]) < 0.00001)
-						tempRow[c] = 0;					
+						tempRow[c] = 0;
+					cout << tempRow[c] << " ";
 				}
-				//cout << "\n";
+				cout << "\n";
 			}
-			//cout << "\nRank row:\n";
+
 			for (int i = 0; i < columnAmount*rankRowAmount; i++)
 			{
 				rankRow[i] = tempRow[i];
-				//cout << rankRow[i] << " ";
 			}
-			//cout << "\n";
 			h++;
+			counter++;
 		}
 
 		for (int r = 0; r < rankRowAmount; r++)
@@ -283,9 +248,9 @@ int main(int argc, char* argv[])
 				for (int j = 0; j < columnAmount; j++)
 				{
 					int c = j + (k * columnAmount);
-					rankRow[c] = rankRow[c] - ((activeRow[j] * rankRow[k * columnAmount + headPosition + r]) / activeRow[headPosition + r]);
-					if (fabs(rankRow[c]) < 0.00001)
-						rankRow[c] = 0;
+					tempRow[c] = rankRow[c] - ((activeRow[j] * rankRow[k * columnAmount + headPosition + r]) / activeRow[headPosition + r]);
+					if (fabs(tempRow[c]) < 0.00001)
+						tempRow[c] = 0;
 				}
 			}
 			for (int i = 0; i < columnAmount*rankRowAmount; i++)
@@ -293,6 +258,52 @@ int main(int argc, char* argv[])
 				rankRow[i] = tempRow[i];
 			}
 		}
+
+		//Обратный ход Гаусса
+
+		//if (rank == size - 1)
+		//{
+		//	for (int k = 0; k < rankRowAmount; k++)
+		//	{
+		//		float * actRow = new float[columnAmount];
+		//		for (int j = 0; j < columnAmount; j++)
+		//		{
+		//			actRow[j] = rankRow[(rankRowAmount - (k + 1))*columnAmount + j];
+		//		}
+		//		for (int r = 0; r < rank; r++)
+		//		{
+		//			//MPI_Send(actRow, columnAmount, MPI_FLOAT, r, r, MPI_COMM_WORLD);
+		//		}
+
+		//		float *tempRow = new float[columnAmount*rankRowAmount];
+		//		for (int i = 0; i < columnAmount*rankRowAmount; i++)
+		//			tempRow[i] = rankRow[i];
+		//		//cout << "\nBack Rank row: \n";
+		//		for (int i = 0; i < rankRowAmount - (k + 1); i++)
+		//		{
+		//			for (int j = 0; j < columnAmount; j++)
+		//			{
+		//				int c = j + (i * columnAmount);
+		//				tempRow[c] = rankRow[c] - ((actRow[j] * rankRow[i * columnAmount + (headPosition + rankRowAmount - 1) - k]) / actRow[(headPosition + rankRowAmount - 1) - k]);
+		//				if (fabs(tempRow[c]) < 0.00001)
+		//					tempRow[c] = 0;
+		//				//cout << tempRow[c] << " ";
+		//			}
+		//			//cout << "\n";
+		//		}
+
+		//		//cout << "\n";
+		//		for (int i = 0; i < columnAmount*rankRowAmount; i++)
+		//		{
+		//			rankRow[i] = tempRow[i];
+		//		}
+		//	}
+		//}
+		//else
+		//{
+
+		//}
+
 		MPI_Send(rankRow, columnAmount*rankRowAmount, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
 		//если есть потоки с большим рангом, то
 		//отправил активную строку потокам с большим рангом
@@ -308,3 +319,4 @@ int main(int argc, char* argv[])
 
 	MPI_Finalize();
 }
+
