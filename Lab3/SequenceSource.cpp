@@ -7,30 +7,32 @@
 
 using namespace std;
 
-float** initMatrix(int n, int m)
+double** initMatrix(int n, int m)
 {
-	float **a = new float*[n];
+	double **a = new double*[n];
 	for (int i = 0; i < n; i++)
-		a[i] = new float[m];
+		a[i] = new double[m];
 	return a;
 }
 
-float** fillInMatrix(float** a, int n, int m)
+double** fillInMatrix(double** a, int n, int m)
 {
 	srand(time(NULL));
 	for (int i = 0; i < n; i++)
 	{
 		for (int j = 0; j < m; j++)
 		{
-			a[i][j] = rand() % 10 + 1;
+			a[i][j] = 1;// rand() % 10 + 1;
 		}
+		a[i][i] = 2;
+		a[i][m - 1] = m;
 	}
 	return a;
 }
 
-float** forwardSubstitution(float** a, int n, int m)
+double** forwardSubstitution(double** a, int n, int m)
 {
-	float ** b = initMatrix(n, m);
+	double ** b = initMatrix(n, m);
 
 	for (int j = 0; j < m; j++)
 		b[0][j] = a[0][j];
@@ -42,20 +44,20 @@ float** forwardSubstitution(float** a, int n, int m)
 			for (int j = 0; j < m; j++)
 			{
 				b[i][j] = a[i][j] - ((a[k - 1][j] * a[i][k - 1]) / a[k - 1][k - 1]);
-				if (fabs(b[i][j]) < 0.00001)
+				if (fabs(b[i][j]) < 0.0000001)
 					b[i][j] = 0;
 			}
 		}
 
-		/*cout << "\nb:\n";
+		cout << "\nb:\n";
 		for (int i = 0; i < n; i++)
 		{
-		for (int j = 0; j < m; j++)
-		{
-		cout << b[i][j] << " ";
+			for (int j = 0; j < m; j++)
+			{
+				cout << b[i][j] << " ";
+			}
+			cout << "\n";
 		}
-		cout << "\n";
-		}*/
 
 		for (int l = 0; l < n; l++)
 		{
@@ -69,17 +71,19 @@ float** forwardSubstitution(float** a, int n, int m)
 }
 
 
-float * backSubstitution(float** a, int n, int m)
+double * backSubstitution(double** a, int n, int m)
 {
-	float * result = new float[m - 1];
+	double * result = new double[m - 1];
 	//Обратный ход метода Гаусса
 	result[m - 2] = a[n - 1][m - 1] / a[n - 1][m - 2];
+	int k = 0;
 	for (int i = m - 3; i >= 0; i--)
 	{
 		int buf = 0;
 		for (int j = i + 1; j < m - 1; j++)
-			buf += a[i][j] * result[j];
-		result[i] = (a[i][n] - buf) / a[i][i];
+			buf += a[n - 2 - k][j] * result[j];
+		result[i] = (a[n - 2 - k][m - 1] - buf) / a[i][i];
+		k++;
 	}
 	return result;
 }
@@ -95,7 +99,7 @@ int main(int argc, char* argv[])
 	cout << "\nEnter column amount:\n";
 	cin >> columnAmount;
 
-	float **a = initMatrix(rowAmount, columnAmount);
+	double **a = initMatrix(rowAmount, columnAmount);
 	a = fillInMatrix(a, rowAmount, columnAmount);
 
 	cout << "a:\n";
@@ -120,11 +124,11 @@ int main(int argc, char* argv[])
 		cout << "\n";
 	}
 
-	float * r = backSubstitution(a, rowAmount, columnAmount);
+	double * r = backSubstitution(a, rowAmount, columnAmount);
 
 	cout << "\nResult vector: \n";
 	for (int i = 0; i < columnAmount - 1; i++)
-		cout << r[i]<<" ";
+		cout << r[i] << " ";
 
 	cin >> rank;
 }
