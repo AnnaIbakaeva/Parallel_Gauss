@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 			cout << "\n";
 		}
 	}
-	int start_time = clock();
+	double start_time = clock();
 	a = forwardSubstitution(a, rowAmount, columnAmount);
 
 	if (rowAmount <= 20)
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 	}
 
 	double * r = backSubstitution(a, rowAmount, columnAmount);
-	int end_time = clock();
+	double end_time = clock();
 
 	cout << "\nResult vector: \n";
 	for (int i = 0; i < columnAmount - 1; i++)

@@ -8,7 +8,7 @@
 
 using namespace std;
 
-float** fillInMatrix(float** a, int n, int m)
+double** fillInMatrix(double** a, int n, int m)
 {
 	srand(time(NULL));
 	for (int i = 0; i < n; i++)
@@ -23,11 +23,11 @@ float** fillInMatrix(float** a, int n, int m)
 	return a;
 }
 
-float** initMatrix(int n, int m)
+double** initMatrix(int n, int m)
 {
-	float **a = new float*[n];
+	double **a = new double*[n];
 	for (int i = 0; i < n; i++)
-		a[i] = new float[m];
+		a[i] = new double[m];
 	a = fillInMatrix(a, n, m);
 
 	if (n < 21)
@@ -45,9 +45,9 @@ float** initMatrix(int n, int m)
 	return a;
 }
 
-float * backSubstitution(float** a, int n, int m)
+double * backSubstitution(double** a, int n, int m)
 {
-	float * result = new float[m - 1];
+	double * result = new double[m - 1];
 	//Обратный ход метода Гаусса
 	result[m - 2] = a[n - 1][m - 1] / a[n - 1][m - 2];
 	int k = 0;
@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 
 	if (rank == 0)
 	{
-		float **a = initMatrix(rowAmount, columnAmount);
+		double **a = initMatrix(rowAmount, columnAmount);
 
 		t1 = MPI_Wtime();
 
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
 			{
 				amount++;
 			}
-			float* sendingRow = new float[columnAmount * amount];
+			double* sendingRow = new double[columnAmount * amount];
 			for (int i = 0; i < amount; i++)
 			{
 				for (int j = 0; j < columnAmount; j++)
@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 					sendingRow[j + i*columnAmount] = a[i + m*rankRowAmount + r][j];
 				}
 			}
-			MPI_Send(sendingRow, columnAmount * amount, MPI_FLOAT, m, 0, MPI_COMM_WORLD);
+			MPI_Send(sendingRow, columnAmount * amount, MPI_DOUBLE, m, 0, MPI_COMM_WORLD);
 			if (amount > rankRowAmount)
 				r++;
 		}
@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 		for (int r = 0; r < rankRowAmount; r++)
 		{
 			//определяем активную строку
-			float* activeRow = new float[columnAmount];
+			double* activeRow = new double[columnAmount];
 			for (int j = 0; j < columnAmount; j++)
 			{
 				activeRow[j] = a[r][j];
@@ -130,12 +130,12 @@ int main(int argc, char* argv[])
 			//отправляем активную строку остальным потокам
 			for (int m = 1; m < size; m++)
 			{
-				MPI_Send(activeRow, columnAmount, MPI_FLOAT, m, m, MPI_COMM_WORLD);
+				MPI_Send(activeRow, columnAmount, MPI_DOUBLE, m, m, MPI_COMM_WORLD);
 			}
-			float ** b = new float*[rankRowAmount];
+			double ** b = new double*[rankRowAmount];
 			for (int i = 0; i < rankRowAmount; i++)
 			{
-				b[i] = new float[columnAmount];
+				b[i] = new double[columnAmount];
 				for (int j = 0; j < columnAmount; j++)
 					b[i][j] = a[i][j];
 			}
@@ -166,9 +166,9 @@ int main(int argc, char* argv[])
 			{
 				amount++;
 			}
-			float* reseivedRow = new float[columnAmount * amount];
+			double* reseivedRow = new double[columnAmount * amount];
 			MPI_Status status;
-			MPI_Recv(reseivedRow, columnAmount * amount, MPI_FLOAT, m, 1, MPI_COMM_WORLD, &status);
+			MPI_Recv(reseivedRow, columnAmount * amount, MPI_DOUBLE, m, 1, MPI_COMM_WORLD, &status);
 
 			for (int i = 0; i < amount; i++)
 			{
@@ -180,7 +180,7 @@ int main(int argc, char* argv[])
 			if (amount > rankRowAmount)
 				l++;
 		}
-		t2 = MPI_Wtime();
+		
 		if (rowAmount <= 20 && columnAmount <= 20)
 		{
 			cout << "\nResult matrix:\n";
@@ -190,14 +190,15 @@ int main(int argc, char* argv[])
 					cout << a[i][j] << " ";
 				cout << "\n";
 			}
-		}
-		cout << "\nTime: " << (t2 - t1);
+		}	
 
-		cout << "\nResult vector: ";
-		float * res = backSubstitution(a, rowAmount, columnAmount);
-		for (int i = 0; i < columnAmount - 1; i++)
+		//cout << "\nResult vector: ";
+		double * res = backSubstitution(a, rowAmount, columnAmount);
+		t2 = MPI_Wtime();
+		/*for (int i = 0; i < columnAmount - 1; i++)
 			cout << res[i] << " ";
-		cout << "\n";
+		cout << "\n";*/
+		cout << "\nTime: " << (t2 - t1);
 	}
 	else
 	{
@@ -208,12 +209,11 @@ int main(int argc, char* argv[])
 		{
 			amount++;
 		}
-		float * rankRow = new float[columnAmount * amount];
-		MPI_Recv(rankRow, columnAmount * amount, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, &status);
+		double * rankRow = new double[columnAmount * amount];
+		MPI_Recv(rankRow, columnAmount * amount, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, &status);
 
 		//пока не дошли до своей активной строки
 		int h = 0;
-		cout <<"\nrank: "<<rank<< " Head position0: " << headPosition << "\n";
 		int counter = 0;
 		int source = 0;
 		bool first = true;
@@ -221,30 +221,29 @@ int main(int argc, char* argv[])
 		{
 			//принимаем активную строку
 			MPI_Status status;
-			float* activeRow = new float[columnAmount];
+			double* activeRow = new double[columnAmount];
 			int tmp = rankRowAmount;
-			cout << "\nrank: " << rank << " source: " << source << "\n";
 			if (residue > 0 && size - source <= residue)
-			{
-				
+			{				
 				tmp++;
-				if (first)
-				{
-					headPosition++;
-					first = false;
-					cout << "\nrank: " << rank << " Head position1: " << headPosition << "\n";
-				}
 			}
-			cout << "\nrank: " << rank << " counter: " << counter << " tmp: " << tmp << "\n";
 			if (counter >= tmp)
 			{
 				source++;
 				counter = 0;
 				first = true;
 			}
-			MPI_Recv(activeRow, columnAmount, MPI_FLOAT, source, rank, MPI_COMM_WORLD, &status);
+			if (residue > 0 && size - source <= residue)
+			{
+				if (first)
+				{
+					headPosition++;
+					first = false;
+				}
+			}
+			MPI_Recv(activeRow, columnAmount, MPI_DOUBLE, source, rank, MPI_COMM_WORLD, &status);
 
-			float *tempRow = new float[columnAmount*amount];
+			double *tempRow = new double[columnAmount*amount];
 			for (int i = 0; i < columnAmount*amount; i++)
 				tempRow[i] = rankRow[i];
 			//считаем свои строки для этой активной строки
@@ -270,11 +269,10 @@ int main(int argc, char* argv[])
 			counter++;
 		}
 
-		cout << "\nrank: " << rank << " Head position2: " << headPosition << "\n";
 		for (int r = 0; r < amount; r++)
 		{
 			//определяем активную строку
-			float* activeRow = new float[columnAmount];
+			double* activeRow = new double[columnAmount];
 			for (int j = 0; j < columnAmount; j++)
 			{
 				activeRow[j] = rankRow[j + r*columnAmount];
@@ -282,9 +280,9 @@ int main(int argc, char* argv[])
 			//отправляем активную строку остальным потокам
 			for (int m = rank + 1; m < size; m++)
 			{
-				MPI_Send(activeRow, columnAmount, MPI_FLOAT, m, m, MPI_COMM_WORLD);
+				MPI_Send(activeRow, columnAmount, MPI_DOUBLE, m, m, MPI_COMM_WORLD);
 			}
-			float *tempRow = new float[columnAmount*amount];
+			double *tempRow = new double[columnAmount*amount];
 			for (int i = 0; i < columnAmount*amount; i++)
 				tempRow[i] = rankRow[i];
 			//пересчитываем остальные свои строки для текущей активной строки
@@ -345,7 +343,7 @@ int main(int argc, char* argv[])
 		//{
 		//}
 
-		MPI_Send(rankRow, columnAmount*amount, MPI_FLOAT, 0, 1, MPI_COMM_WORLD);
+		MPI_Send(rankRow, columnAmount*amount, MPI_DOUBLE, 0, 1, MPI_COMM_WORLD);
 	}
 
 	MPI_Finalize();
