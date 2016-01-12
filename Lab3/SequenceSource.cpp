@@ -49,7 +49,7 @@ double** forwardSubstitution(double** a, int n, int m)
 			}
 		}
 
-		cout << "\nb:\n";
+		/*cout << "\nb:\n";
 		for (int i = 0; i < n; i++)
 		{
 			for (int j = 0; j < m; j++)
@@ -57,7 +57,7 @@ double** forwardSubstitution(double** a, int n, int m)
 				cout << b[i][j] << " ";
 			}
 			cout << "\n";
-		}
+		}*/
 
 		for (int l = 0; l < n; l++)
 		{
@@ -79,10 +79,12 @@ double * backSubstitution(double** a, int n, int m)
 	int k = 0;
 	for (int i = m - 3; i >= 0; i--)
 	{
-		int buf = 0;
+		double buf = 0;
 		for (int j = i + 1; j < m - 1; j++)
+		{
 			buf += a[n - 2 - k][j] * result[j];
-		result[i] = (a[n - 2 - k][m - 1] - buf) / a[i][i];
+		}
+		result[i] = (a[n - 2 - k][m - 1] - buf) / a[n - 2 - k][n - 2 - k];
 		k++;
 	}
 	return result;
@@ -102,33 +104,42 @@ int main(int argc, char* argv[])
 	double **a = initMatrix(rowAmount, columnAmount);
 	a = fillInMatrix(a, rowAmount, columnAmount);
 
-	cout << "a:\n";
-	for (int i = 0; i < rowAmount; i++)
+	if (rowAmount <= 20)
 	{
-		for (int j = 0; j < columnAmount; j++)
+		cout << "a:\n";
+		for (int i = 0; i < rowAmount; i++)
 		{
-			cout << a[i][j] << " ";
+			for (int j = 0; j < columnAmount; j++)
+			{
+				cout << a[i][j] << " ";
+			}
+			cout << "\n";
 		}
-		cout << "\n";
 	}
-
+	int start_time = clock();
 	a = forwardSubstitution(a, rowAmount, columnAmount);
 
-	cout << "\nresult a:\n";
-	for (int i = 0; i < rowAmount; i++)
+	if (rowAmount <= 20)
 	{
-		for (int j = 0; j < columnAmount; j++)
+		cout << "\nresult a:\n";
+		for (int i = 0; i < rowAmount; i++)
 		{
-			cout << a[i][j] << " ";
+			for (int j = 0; j < columnAmount; j++)
+			{
+				cout << a[i][j] << " ";
+			}
+			cout << "\n";
 		}
-		cout << "\n";
 	}
 
 	double * r = backSubstitution(a, rowAmount, columnAmount);
+	int end_time = clock();
 
 	cout << "\nResult vector: \n";
 	for (int i = 0; i < columnAmount - 1; i++)
 		cout << r[i] << " ";
 
-	cin >> rank;
+	cout << "\nTime: " << (end_time - start_time)/1000<<"\n";
+
+	system("pause");
 }
